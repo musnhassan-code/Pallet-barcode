@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pallet Barcode Studio | noon minutes</title>
+  
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Code Rendering Engines -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.0.4/dist/bwip-js-min.js"></script>
+
+  <style>
+    :root {
+      --sidebar-bg: #171923;
+      --sidebar-hover: #232734;
+      --sidebar-active: #2d3243;
+      --main-bg: #f8f9fa;
+      --card-bg: #ffffff;
+      --primary-black: #0f172a;
+      --primary-red: #e52e2e;
+      --border-color: #e2e8f0;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --blue-link: #2563eb;
+      
+      --label-width: 50mm;
+      --label-height: 30mm;
+      --zoom-scale: 1;
+      --font-scale: 1;
+    }
+
+    * { box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--main-bg);
+      color: var(--text-main);
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* 1. SIDEBAR DESIGN */
+    .sidebar {
+      width: 320px;
+      background-color: var(--sidebar-bg);
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      box-shadow: 2px 0 12px rgba(0,0,0,0.05);
+      z-index: 100;
+    }
+
+    .sidebar-header {
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .noon-logo-wrap { display: flex; align-items: center; gap: 6px; user-select: none; }
+    .noon-logo-wrap .noon-txt { font-size: 20px; font-weight: 900; color: #ffffff; letter-spacing: -1px; }
+    .noon-logo-wrap .app-badge {
+      background-color: var(--primary-red);
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 900;
+      padding: 3px 6px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .sidebar-menu { padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-row { display: flex; gap: 10px; }
+    .form-row .form-group { flex: 1; }
+
+    label { font-size: 11px; font-weight: 700; color: #a0aec0; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    select, input, textarea {
+      background-color: #232734;
+      color: #ffffff;
+      border: 1px solid #32384a;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    select:focus, input:focus, textarea:focus {
+      border-color: var(--primary-red);
+      box-shadow: 0 0 0 3px rgba(229, 46, 46, 0.2);
+    }
+
+    textarea { height: 90px; resize: vertical; font-family: monospace; }
+
+    .radio-group { display: flex; gap: 6px; background: #10121a; padding: 4px; border-radius: 6px; }
+    .radio-btn {
+      flex: 1; text-align: center; padding: 8px; font-size: 11px; font-weight: 700;
+      cursor: pointer; border-radius: 4px; background: transparent; color: #a0aec0; border: none; transition: all 0.2s ease;
+    }
+    .radio-btn.active { background-color: var(--primary-red); color: #ffffff; }
+
+    .zoom-box { background: #232734; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; gap: 10px; }
+    .zoom-box input[type="range"] { flex: 1; accent-color: var(--primary-red); cursor: pointer; }
+    .zoom-val { font-size: 12px; font-weight: 700; color: #ffffff; width: 40px; }
+
+    .btn-stack { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+
+    button.btn-action {
+      padding: 11px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-generate { background-color: var(--primary-red); color: #ffffff; }
+    .btn-generate:hover { background-color: #cc2525; transform: translateY(-1px); }
+
+    .btn-auto { background-color: #2563eb; color: #ffffff; }
+    .btn-auto:hover { background-color: #1d4ed8; }
+
+    .btn-print { background-color: #2d3748; color: #ffffff; border: 1px solid #4a5568; }
+    .btn-print:hover { background-color: #4a5568; }
+
+    /* 2. MAIN WORKSPACE */
+    .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+
+    .top-header {
+      background-color: #ffffff;
+      padding: 14px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .top-header .page-title { font-size: 18px; font-weight: 700; color: var(--text-main); }
+
+    .zone-header-dropdown {
+      display: flex; align-items: center; gap: 8px; background: #ffffff; padding: 4px 8px;
+      border-radius: 6px; border: 1px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .zone-header-dropdown select { background: transparent; color: var(--text-main); border: none; font-size: 13px; font-weight: 700; cursor: pointer; padding: 4px 8px; }
+
+    .dashboard-body { padding: 24px 32px; display: flex; flex-direction: column; gap: 20px; }
+
+    .stats-container { display: flex; gap: 16px; }
+    .stat-card {
+      background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px 20px; flex: 1;
+      display: flex; flex-direction: column; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); transition: all 0.3s ease;
+    }
+    .stat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); transform: translateY(-2px); }
+    .stat-card .val { font-size: 22px; font-weight: 800; color: var(--text-main); }
+    .stat-card .lbl { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+
+    .filter-bar {
+      background: #ffffff; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-color);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .search-input { width: 320px; background: #ffffff; color: var(--text-main); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-size: 13px; }
+
+    .labels-viewport { overflow: auto; padding: 10px 0; }
+    .labels-grid {
+      display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;
+      transform-origin: top left; transform: scale(var(--zoom-scale)); transition: transform 0.2s ease-out;
+    }
+
+    /* 3. LABEL SPECIFICATIONS WITH TYPE BADGE */
+    .label-card {
+      width: var(--label-width); height: var(--label-height); background: #ffffff !important; color: #000000 !important;
+      border: 2px solid #000000; border-radius: 4px; padding: 6px 10px; display: flex; flex-direction: column;
+      justify-content: space-between; box-shadow: 0 4px 12px rgba(0,0,0,0.06); position: relative; overflow: hidden;
+      box-sizing: border-box; animation: cardFadeIn 0.3s ease forwards;
+    }
+
+    .label-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 3px; }
+    .brand-mini { line-height: 0.85; }
+    .brand-mini .noon-txt { font-size: calc(16px * var(--font-scale)); font-weight: 900; color: #000; letter-spacing: -1px; }
+    .brand-mini .min-tag { background: #000; color: #fff; font-size: calc(7px * var(--font-scale)); font-weight: 900; padding: 1px 3px; text-transform: uppercase; font-style: italic; }
+
+    .header-center { text-align: center; }
+    .wh-badge { font-size: calc(8px * var(--font-scale)); font-weight: 900; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px; }
+
+    .label-info { text-align: right; }
+    
+    /* شارة نوع الخوارزمية الخاصة بكل ليبل */
+    .algo-type-tag {
+      font-size: calc(7px * var(--font-scale));
+      font-weight: 900;
+      color: #000;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 1px;
+    }
+
+    .zone-lbl { font-size: calc(10px * var(--font-scale)); font-weight: 900; text-transform: uppercase; color: #000; }
+
+    .code-container { display: flex; justify-content: center; align-items: center; flex-grow: 1; width: 100%; margin: 2px 0; overflow: hidden; }
+    .code-container svg, .code-container canvas, .code-container img { max-height: 100%; max-width: 100%; }
+
+    .code-footer-wrap { display: flex; justify-content: space-between; align-items: center; background: #000; color: #fff; padding: 2px 5px; border-radius: 2px; }
+    .code-text-footer { font-family: monospace; font-size: calc(10px * var(--font-scale)); font-weight: 700; }
+    .tech-hash { font-family: monospace; font-size: calc(6px * var(--font-scale)); color: #aaa; }
+
+    @keyframes cardFadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media print {
+      @page { size: var(--label-width) var(--label-height); margin: 0; }
+      body { background: #fff; padding: 0; margin: 0; }
+      .sidebar, .top-header, .stats-container, .filter-bar { display: none !important; }
+      .main-wrapper { display: block; padding: 0; }
+      .dashboard-body { padding: 0; }
+      .labels-viewport { padding: 0; overflow: visible; }
+      .labels-grid { display: block; padding: 0; margin: 0; transform: none !important; }
+      .label-card {
+        page-break-after: always; page-break-inside: avoid; border: 1px solid #000 !important;
+        margin: 0; width: 100vw !important; height: 100vh !important; border-radius: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LEFT SIDEBAR CONTROL PANEL -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="noon-logo-wrap">
+        <span class="noon-txt">noon</span>
+        <span class="app-badge">PALLET BARCODE</span>
+      </div>
+    </div>
+
+    <div class="sidebar-menu">
+      <div class="form-group">
+        <label>Display Zoom (الزوم)</label>
+        <div class="zoom-box">
+          <input type="range" id="zoomRange" min="0.3" max="2.0" step="0.1" value="1.0" oninput="updateZoom(this.value)">
+          <span class="zoom-val" id="zoomValText">100%</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Orientation (اتجاه الورقة)</label>
+        <div class="radio-group">
+          <button class="radio-btn active" id="btnLandscape" onclick="setOrientation('landscape')">Landscape (عرضي)</button>
+          <button class="radio-btn" id="btnPortrait" onclick="setOrientation('portrait')">Portrait (طولي)</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="sizePresetSelect">Label Size Preset (الأبعاد)</label>
+        <select id="sizePresetSelect" onchange="handleSizePresetChange()">
+          <option value="50x30">50mm x 30mm (5 سم × 3 سم)</option>
+          <option value="25x25">25mm x 25mm (2.5 سم × 2.5 سم)</option>
+          <option value="100x150">100mm x 150mm (10 سم × 15 سم)</option>
+          <option value="100x50">100mm x 50mm (Standard Warehouse)</option>
+          <option value="CUSTOM">Custom Dimensions...</option>
+        </select>
+      </div>
+
+      <div class="form-row" id="customSizeRow" style="display: none;">
+        <div class="form-group">
+          <label for="customWidthInput">Width (mm)</label>
+          <input type="number" id="customWidthInput" value="50" min="10" max="300" onchange="applyCustomDimensions()">
+        </div>
+        <div class="form-group">
+          <label for="customHeightInput">Height (mm)</label>
+          <input type="number" id="customHeightInput" value="30" min="10" max="300" onchange="applyCustomDimensions()">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="warehouseSelect">Warehouse Node (EG WH)</label>
+        <select id="warehouseSelect" onchange="handleWarehouseChange()">
+          <option value="CAIIDO1">EGNIM | CAIIDO1</option>
+          <option value="GIZDO2">EGNIM | GIZDO2</option>
+          <option value="ALEX03">EGNIM | ALEX03</option>
+          <option value="CUSTOM">Custom Warehouse...</option>
+        </select>
+      </div>
+
+      <div class="form-group" id="customWhField" style="display: none;">
+        <label for="customWhInput">Custom WH Code</label>
+        <input type="text" id="customWhInput" placeholder="e.g. CAIIDO5">
+      </div>
+
+      <!-- AUTO GENERATION ALGORITHM SELECTOR -->
+      <div class="form-group">
+        <label for="algoTypeSelect">Algorithm Type (نوع الخوارزمية)</label>
+        <select id="algoTypeSelect">
+          <option value="PALLET">Pallet FPI (FPI83H1D...)</option>
+          <option value="GLOBAL_TOTES">Global Tote (TGI83K1G...EG)</option>
+          <option value="GLOBAL_TOTES_MINUTES">Global Tote Minutes (TGI83K1H...EG)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="autoGenerateCount">عدد الأكواد المراد توليدها تلقائياً</label>
+        <div class="form-row">
+          <input type="number" id="autoGenerateCount" value="10" min="1" max="500">
+          <button class="btn-action btn-auto" style="flex:1;" onclick="runAutoGeneration()">🎲 Generate</button>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="symbologySelect">Barcode Symbology</label>
+        <select id="symbologySelect" onchange="updateSymbologyCardStat()">
+          <optgroup label="1D Barcodes">
+            <option value="CODE128">Code 128 (Standard)</option>
+            <option value="CODE39">Code 39</option>
+            <option value="EAN13">EAN-13 Retail</option>
+          </optgroup>
+          <optgroup label="2D Matrix Codes">
+            <option value="QR">QR Code (High Capacity)</option>
+            <option value="DATAMATRIX">Data Matrix (Logistics)</option>
+            <option value="PDF417">PDF417 (Manifest)</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="codeListInput">Codes List (كود في كل سطر)</label>
+        <textarea id="codeListInput" placeholder="Paste codes here...">FPI83H1DZS2KIX
+TGI83K1GHLZYEG
+TGI83K1H6MMBEG</textarea>
+      </div>
+
+      <div class="btn-stack">
+        <button class="btn-action btn-generate" onclick="generateBatch()">⚡ Render All Labels</button>
+        <button class="btn-action btn-print" onclick="window.print()">🖨️ Direct Print</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="main-wrapper">
+    <header class="top-header">
+      <div class="page-title">Pallet Barcode Studio</div>
+
+      <div class="zone-header-dropdown">
+        <span>🇪🇬</span>
+        <select id="zoneSelectTop" onchange="syncAndGenerateZone()">
+          <option value="AMB">AMB (Ambient Storage)</option>
+          <option value="UCH">UCH (Ultra Chill Zone)</option>
+          <option value="FZ">FZ (Freezer Storage)</option>
+          <option value="UH">UH (Ultra High Storage)</option>
+          <option value="CUSTOM">Custom Storage Zone...</option>
+        </select>
+      </div>
+    </header>
+
+    <div class="dashboard-body">
+      <div class="stats-container">
+        <div class="stat-card">
+          <div class="val" id="labelCount">0</div>
+          <div class="lbl">Labels Generated</div>
+        </div>
+        <div class="stat-card">
+          <div class="val" id="statZoneText" style="color: #2563eb;">AMB</div>
+          <div class="lbl">Active Storage Zone</div>
+        </div>
+        <div class="stat-card">
+          <div class="val" id="statSymbologyText" style="color: #16a34a;">CODE128</div>
+          <div class="lbl">Barcode Symbology</div>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" class="search-input" id="filterInput" placeholder="🔍 Search barcode / code..." onkeyup="filterLabels()">
+      </div>
+
+      <div class="labels-viewport">
+        <div class="labels-grid" id="labelsGrid"></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let currentOrientation = 'landscape';
+
+    // فحص وتحديد نوع الخوارزمية تلقائياً من شكل الكود
+    function detectAlgorithmType(code) {
+      if (code.startsWith('FPI')) {
+        return 'PALLET';
+      } else if (code.startsWith('TGI') && code.charAt(7) === 'G') {
+        return 'GLOBAL TOTE';
+      } else if (code.startsWith('TGI') && code.charAt(7) === 'H') {
+        return 'GLOBAL TOTE MINS';
+      }
+      return 'STAGING';
+    }
+
+    // مشغل الخوارزميات
+    function runAutoGeneration() {
+      const algoType = document.getElementById('algoTypeSelect').value;
+
+      if (algoType === 'PALLET') {
+        generateFpiPatternCodes();
+      } else if (algoType === 'GLOBAL_TOTES') {
+        generateGlobalTotesCodes("TGI83K1G");
+      } else if (algoType === 'GLOBAL_TOTES_MINUTES') {
+        generateGlobalTotesCodes("TGI83K1H");
+      }
+    }
+
+    function generateFpiPatternCodes() {
+      const countInput = document.getElementById('autoGenerateCount').value || 10;
+      const count = parseInt(countInput);
+      const prefix = "FPI83H1D";
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let generatedCodes = [];
+
+      for (let i = 0; i < count; i++) {
+        let randomSuffix = "";
+        for (let j = 0; j < 6; j++) {
+          randomSuffix += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        generatedCodes.push(prefix + randomSuffix);
+      }
+
+      document.getElementById('codeListInput').value = generatedCodes.join('\n');
+      generateBatch();
+    }
+
+    function generateGlobalTotesCodes(prefixCode) {
+      const countInput = document.getElementById('autoGenerateCount').value || 10;
+      const count = parseInt(countInput);
+      const prefix = prefixCode || "TGI83K1H";
+      const suffix = "EG";
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let generatedCodes = [];
+
+      for (let i = 0; i < count; i++) {
+        let randomMiddle = "";
+        for (let j = 0; j < 4; j++) {
+          randomMiddle += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        generatedCodes.push(prefix + randomMiddle + suffix);
+      }
+
+      document.getElementById('codeListInput').value = generatedCodes.join('\n');
+      generateBatch();
+    }
+
+    function updateZoom(val) {
+      document.documentElement.style.setProperty('--zoom-scale', val);
+      document.getElementById('zoomValText').innerText = `${Math.round(val * 100)}%`;
+    }
+
+    function setOrientation(mode) {
+      currentOrientation = mode;
+      document.getElementById('btnLandscape').classList.toggle('active', mode === 'landscape');
+      document.getElementById('btnPortrait').classList.toggle('active', mode === 'portrait');
+      handleSizePresetChange();
+    }
+
+    function handleWarehouseChange() {
+      const select = document.getElementById('warehouseSelect');
+      const customWh = document.getElementById('customWhField');
+      customWh.style.display = (select.value === 'CUSTOM') ? 'flex' : 'none';
+    }
+
+    function getActiveWarehouse() {
+      const select = document.getElementById('warehouseSelect');
+      return (select.value === 'CUSTOM')
+        ? (document.getElementById('customWhInput').value.trim().toUpperCase() || 'CAIIDO1')
+        : select.value;
+    }
+
+    function handleSizePresetChange() {
+      const preset = document.getElementById('sizePresetSelect').value;
+      const customRow = document.getElementById('customSizeRow');
+
+      if (preset === 'CUSTOM') {
+        customRow.style.display = 'flex';
+        applyCustomDimensions();
+      } else {
+        customRow.style.display = 'none';
+        let [w, h] = preset.split('x').map(Number);
+        
+        if (currentOrientation === 'portrait' && w > h) [w, h] = [h, w];
+        else if (currentOrientation === 'landscape' && h > w) [w, h] = [h, w];
+
+        setLabelDimensions(w, h);
+      }
+    }
+
+    function applyCustomDimensions() {
+      let w = Number(document.getElementById('customWidthInput').value) || 50;
+      let h = Number(document.getElementById('customHeightInput').value) || 30;
+
+      if (currentOrientation === 'portrait' && w > h) [w, h] = [h, w];
+      if (currentOrientation === 'landscape' && h > w) [w, h] = [h, w];
+
+      setLabelDimensions(w, h);
+    }
+
+    function setLabelDimensions(widthMm, heightMm) {
+      document.documentElement.style.setProperty('--label-width', `${widthMm}mm`);
+      document.documentElement.style.setProperty('--label-height', `${heightMm}mm`);
+      
+      const minDimension = Math.min(widthMm, heightMm);
+      const fontScale = Math.max(0.6, Math.min(1.4, minDimension / 38));
+      document.documentElement.style.setProperty('--font-scale', fontScale);
+    }
+
+    function syncAndGenerateZone() {
+      const zoneSelect = document.getElementById('zoneSelectTop');
+      let val = zoneSelect.value;
+
+      if (val === 'CUSTOM') {
+        let customVal = prompt('Enter Custom Storage Zone Name:', 'FRESH');
+        if (customVal) {
+          document.getElementById('statZoneText').innerText = customVal.toUpperCase();
+        } else {
+          zoneSelect.value = 'AMB';
+          document.getElementById('statZoneText').innerText = 'AMB';
+        }
+      } else {
+        document.getElementById('statZoneText').innerText = val;
+      }
+
+      generateBatch();
+    }
+
+    function getActiveZone() {
+      return document.getElementById('statZoneText').innerText || 'AMB';
+    }
+
+    function updateSymbologyCardStat() {
+      const symb = document.getElementById('symbologySelect').value;
+      document.getElementById('statSymbologyText').innerText = symb;
+    }
+
+    function filterLabels() {
+      const query = document.getElementById('filterInput').value.toLowerCase();
+      const cards = document.querySelectorAll('.label-card');
+      
+      cards.forEach(card => {
+        const text = card.getAttribute('data-code').toLowerCase();
+        card.style.display = text.includes(query) ? 'flex' : 'none';
+      });
+    }
+
+    function generateBatch() {
+      const grid = document.getElementById('labelsGrid');
+      grid.innerHTML = '';
+
+      const zoneText = getActiveZone();
+      const warehouseText = getActiveWarehouse();
+      const format = document.getElementById('symbologySelect').value;
+      const rawInput = document.getElementById('codeListInput').value;
+      
+      const codes = rawInput.split('\n')
+                            .map(c => c.trim().toUpperCase())
+                            .filter(c => c.length > 0);
+
+      document.getElementById('labelCount').innerText = codes.length;
+      updateSymbologyCardStat();
+
+      if (codes.length === 0) return;
+
+      codes.forEach((code, i) => {
+        const elemId = `render-target-${i}`;
+        
+        // معرفة خوارزمية الكود وعرض اسمه على الليبل
+        const labelAlgoTag = detectAlgorithmType(code);
+
+        let renderTag = ['CODE128', 'CODE39', 'EAN13'].includes(format)
+          ? `<svg id="${elemId}"></svg>`
+          : `<canvas id="${elemId}"></canvas>`;
+
+        const cardHTML = `
+          <div class="label-card" data-code="${code}" style="animation-delay: ${i * 0.03}s">
+            <div class="label-header">
+              <div class="brand-mini">
+                <div class="noon-txt">noon</div>
+                <div class="min-tag">MINUTES</div>
+              </div>
+
+              <div class="header-center">
+                <span class="wh-badge">${warehouseText}</span>
+              </div>
+
+              <div class="label-info">
+                <span class="algo-type-tag">${labelAlgoTag}</span>
+                <div class="zone-lbl">${zoneText}</div>
+              </div>
+            </div>
+            
+            <div class="code-container">
+              ${renderTag}
+            </div>
+            
+            <div class="code-footer-wrap">
+              <span class="tech-hash">#${(i+1).toString().padStart(3, '0')}</span>
+              <span class="code-text-footer">${code}</span>
+              <span class="tech-hash">EG</span>
+            </div>
+          </div>
+        `;
+
+        grid.insertAdjacentHTML('beforeend', cardHTML);
+
+        try {
+          if (['CODE128', 'CODE39', 'EAN13'].includes(format)) {
+            JsBarcode(`#${elemId}`, code, {
+              format: format,
+              displayValue: false,
+              margin: 0,
+              height: 45,
+              width: 1.6
+            });
+          } else if (format === 'QR') {
+            bwipjs.toCanvas(elemId, { bcid: 'qrcode', text: code, scale: 3 });
+          } else if (format === 'DATAMATRIX') {
+            bwipjs.toCanvas(elemId, { bcid: 'datamatrix', text: code, scale: 2 });
+          } else if (format === 'PDF417') {
+            bwipjs.toCanvas(elemId, { bcid: 'pdf417', text: code, scale: 2 });
+          }
+        } catch (e) {
+          console.error("Rendering Error:", e);
+        }
+      });
+    }
+
+    window.onload = generateBatch;
+  </script>
+</body>
+</html>
