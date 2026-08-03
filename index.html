@@ -266,7 +266,7 @@
       </div>
 
       <div class="form-group">
-        <label for="sizePresetSelect">Label Size Preset (الأبعاد)</label>
+        <label for="sizePresetSelect">Label Size Preset (Dimensions)</label>
         <select id="sizePresetSelect" onchange="handleSizePresetChange()">
           <option value="50x30">50mm x 30mm (5 سم × 3 سم)</option>
           <option value="25x25">25mm x 25mm (2.5 سم × 2.5 سم)</option>
@@ -304,7 +304,7 @@
 
       <!-- AUTO GENERATION ALGORITHM SELECTOR -->
       <div class="form-group">
-        <label for="algoTypeSelect">Algorithm Type (نوع الخوارزمية)</label>
+        <label for="algoTypeSelect">Algorithm Type (Algorithm type)</label>
         <select id="algoTypeSelect">
           <option value="PALLET">Pallet FPI (FPI83H1D...)</option>
           <option value="GLOBAL_TOTES">Global Tote (TGI83K1G...EG)</option>
@@ -313,7 +313,7 @@
       </div>
 
       <div class="form-group">
-        <label for="autoGenerateCount">عدد الأكواد المراد توليدها تلقائياً</label>
+        <label for="autoGenerateCount">Number of codes to be generated automatically</label>
         <div class="form-row">
           <input type="number" id="autoGenerateCount" value="10" min="1" max="500">
           <button class="btn-action btn-auto" style="flex:1;" onclick="runAutoGeneration()">🎲 Generate</button>
