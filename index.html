@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>noon MINUTES OPS | Complete Studio, Pace & Data Entry Viewer</title>
+  <title>noon MINUTES OPS | Direct Google Sheets Live Viewer</title>
   
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   
-  <!-- Code Rendering Engines & Excel Parser -->
+  <!-- Code Rendering Engines & Excel/CSV Parser -->
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bwip-js@3.0.4/dist/bwip-js-min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -525,12 +525,12 @@ TGI83K1H6MMBEG</textarea>
       </div>
     </div>
 
-    <!-- VIEW 3: DATA ENTRY TRIPS VIEWER (GOOGLE SHEET CONNECTED) -->
+    <!-- VIEW 3: DATA ENTRY TRIPS VIEWER (DIRECT GOOGLE SHEETS LIVE) -->
     <div id="dataEntryView" class="tab-view">
       <div class="page-container">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-          <h1 class="page-title">🗂️ Data Entry Trips Viewer</h1>
-          <span id="lastUpdatedTag" style="font-size:12px; font-weight:700; color:var(--text-muted);">Syncing sheet...</span>
+          <h1 class="page-title">🗂️ Data Entry Trips Viewer (100% Google Live Sync)</h1>
+          <span id="lastUpdatedTag" style="font-size:12px; font-weight:700; color:var(--text-muted);">Syncing with Google Sheets...</span>
         </div>
 
         <!-- KPI CARDS -->
@@ -579,7 +579,7 @@ TGI83K1H6MMBEG</textarea>
             </select>
           </div>
 
-          <button class="btn btn-red" onclick="fetchGoogleSheetData()">🔄 Live Sync Sheet</button>
+          <button class="btn btn-red" onclick="fetchGoogleSheetData()">🔄 Live Sync Google Sheet</button>
           <button class="btn btn-green" onclick="exportFilteredDataEntryExcel()">📊 Export Filtered Excel</button>
           <button class="btn btn-auto" onclick="exportFilteredDataEntryCSV()">📥 Export Filtered CSV</button>
 
@@ -616,7 +616,7 @@ TGI83K1H6MMBEG</textarea>
                 </tr>
               </thead>
               <tbody id="deTableBody">
-                <tr><td colspan="21" class="empty-msg">Fetching data...</td></tr>
+                <tr><td colspan="21" class="empty-msg">Fetching Google Sheets data...</td></tr>
               </tbody>
             </table>
           </div>
@@ -636,23 +636,21 @@ TGI83K1H6MMBEG</textarea>
     let globalDataEntryRaw = [];
     let filteredDataEntry = [];
 
-    // Complete Guaranteed Fallback Rows (A -> U)
-    const fallbackMatrix = [
-      ["6/1/2026","CAI_AMB_T002","CAIDS17","Hadayek Al Ahram 2","Diab","Dispatched","Evening","DT5291639291349A3","100","Match","1266","PH41034440710E | PH48984674499E | PH48459179483E","","","Match","1266","","PH41034440710E | PH48984674499E | PH48459179483E","","42.3 km","1 hour 3 mins"],
-      ["6/1/2026","CAI_AMB_T005","CAIDS14","Dokki","Diab","Dispatched","Evening","DT5291639291349A2","56","Match","460","PH48912423769E | PH48382012343E","","","Match","460","","PH48912423769E | PH48382012343E","","43.8 km","1 hour 6 mins"],
-      ["6/1/2026","CAI_AMB_T002","CAIDS15","6th of October","Diab","Dispatched","Evening","DT5291639291349A3","88","Match","991","PH46624793566E | PH41881239352E | PH47616701393E","","","Match","991","","PH46624793566E | PH41881239352E | PH47616701393E","","12.5 km","21 mins"],
-      ["6/1/2026","CAI_AMB_T003","CAIDS13","Nasr City - 9th Disctrict","Diab","Dispatched","Evening","DT5291639291349A3","104","Match","991","PH49094004336E | PH42206851427E | PH43846034009E","","","Match","991","","PH49094004336E | PH42206851427E | PH43846034009E","","74.6 km","1 hour 52 mins"],
-      ["6/1/2026","CAI_AMB_T003","CAIDS18","Mokattam 2","Diab","Dispatched","Evening","DT2402608071049A10","339","Match","3275","PH43717194753E | PH41170965099E | PH48356815785E | PH48487832374E | PH46168678755E | PH40765948757E | PH45983870473E | PH47508032674E | PH41580749100E | PH40254301339E","","","Match","3275","","PH43717194753E...","","66.1 km","1 hour 39 mins"],
-      ["6/1/2026","CAI_AMB_T003","CAIDS20","Zahraa Maadi","Diab","Dispatched","Evening","DT6070630250381A3","84","Match","585","PH43551526539E | PH44221761149E | PH40844942123E","","","Match","585","","PH43551526539E | PH44221761149E | PH40844942123E","","63.3 km","1 hour 35 mins"],
-      ["6/1/2026","CAI_AMB_T001","CAIDS09","Fifth Settlement - 1st District","Diab","Dispatched","Evening","DT6070630250381A2","67","Match","943","PH48819417666E | PH48889693744E","","","Match","943","","PH48819417666E | PH48889693744E","","73.7 km","1 hour 51 mins"],
-      ["6/1/2026","CAI_AMB_T001","CAIDS10","First Settlement - El Banafseg","Diab","Dispatched","Evening","DT6070630250381A2","63","Match","673","PH46187639257E | PH42615650725E","","","Match","673","","PH46187639257E | PH42615650725E","","83.8 km","2 hours 6 mins"],
-      ["6/1/2026","CAI_AMB_T001","CAIDS11","New Cairo - One Golden SQ","Diab","Dispatched","Evening","DT6070630250381A2","60","Match","686","PH42973561403E | PH44982663874E","","","Match","686","","PH42973561403E | PH44982663874E","","89.1 km","2 hours 14 mins"],
-      ["6/1/2026","CAI_AMB_T003","CAIDS18","Mokattam 2","Diab","Dispatched","Evening","DT6437996656683A10","341","Match","2710","PH46876373513E | PH43433859079E | PH40903361452E | PH45869701068E | PH43048225016E | PH49426266651E | PH42495954702E | PH44016138046E | PH48130237521E | PH49495953372E","","","Match","2710","","PH46876373513E...","","66.1 km","1 hour 39 mins"],
-      ["6/1/2026","CAI_AMB_T003","CAIDS18","Mokattam 2","Diab","Dispatched","Evening","N/A","7387","Ibrahim Eid","10","","","","Ibrahim Eid","10","","","","66.1 km","1 hour 39 mins"],
-      ["6/2/2026","CAI_AMB_T002","CAIDS15","6th of October","Diab","Dispatched","Evening","DT1708490064536A2","61","Match","845","PH44873245419E | PH41490105049E","","","Match","845","","PH44873245419E | PH41490105049E","","12.5 km","21 mins"],
-      ["6/2/2026","CAI_AMB_T001","CAIDS09","Fifth Settlement - 1st District","Diab","Dispatched","Evening","DT0161671029146A2","54","Match","634","PH40717973096E | PH46517306520E","","","Match","634","","PH40717973096E | PH46517306520E","","73.7 km","1 hour 51 mins"],
-      ["6/2/2026","CAI_AMB_T003","CAIDS13","Nasr City - 9th Disctrict","Diab","Dispatched","Evening","DT5445705234043A3","80","Match","865","PH48607863579E | PH46761115495E | PH40098104494E","","","Match","865","","PH48607863579E | PH46761115495E | PH40098104494E","","74.6 km","1 hour 52 mins"]
-    ];
+    // Helper to Format Excel Date Numbers (e.g. 46174 -> 2026-06-01)
+    function formatExcelDate(val) {
+      if (!val) return "";
+      let num = Number(val);
+      if (!isNaN(num) && num > 30000 && num < 60000) {
+        let dateObj = XLSX.SSF.parse_date_code(num);
+        if (dateObj) {
+          let y = dateObj.y;
+          let m = String(dateObj.m).padStart(2, '0');
+          let d = String(dateObj.d).padStart(2, '0');
+          return `${y}-${m}-${d}`;
+        }
+      }
+      return String(val).trim();
+    }
 
     function switchMainTab(tabName) {
       document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
@@ -671,47 +669,36 @@ TGI83K1H6MMBEG</textarea>
       }
     }
 
-    /* CORS-SAFE GOOGLE SHEETS FETCHING WITH PROXY FALLBACK */
+    /* DIRECT 100% GOOGLE GVIZ LIVE FETCHING WITH DATE FORMATTING */
     async function fetchGoogleSheetData() {
       const updatedTag = document.getElementById('lastUpdatedTag');
-      updatedTag.innerText = "⏳ Syncing sheet data...";
+      updatedTag.innerText = "⏳ Connecting directly to Google Sheets API...";
 
-      const targetCsvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_ID}`;
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetCsvUrl)}`;
-
-      let csvText = "";
+      // Standard Google Sheets Live Export URL
+      const googleLiveCsvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${GID_ID}&t=${Date.now()}`;
 
       try {
-        // Try Direct
-        try {
-          let res = await fetch(targetCsvUrl);
-          if (res.ok) csvText = await res.text();
-        } catch (e) { console.warn("Direct fetch blocked, trying proxy..."); }
+        let response = await fetch(googleLiveCsvUrl);
+        if (!response.ok) throw new Error("Could not connect to Google Sheets");
+        
+        let csvText = await response.text();
+        let workbook = XLSX.read(csvText, { type: 'string' });
+        let sheet = workbook.Sheets[workbook.SheetNames[0]];
+        let matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
 
-        // Try Proxy if Direct failed
-        if (!csvText) {
-          let res = await fetch(proxyUrl);
-          if (res.ok) csvText = await res.text();
-        }
-
-        if (csvText && csvText.trim().length > 0) {
-          const workbook = XLSX.read(csvText, { type: 'string' });
-          const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          let matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-
-          if (matrix && matrix.length > 1) {
-            globalDataEntryRaw = matrix.slice(1).filter(r => r.some(cell => String(cell).trim() !== ""));
-            updatedTag.innerText = `✅ Live Synced (${globalDataEntryRaw.length} rows loaded) - ${new Date().toLocaleTimeString()}`;
-          } else {
-            throw new Error("Parsed matrix empty");
-          }
+        if (matrix && matrix.length > 1) {
+          // Remove Header Row & Format Dates in Column A
+          globalDataEntryRaw = matrix.slice(1).filter(r => r.some(c => String(c).trim() !== "")).map(r => {
+            r[0] = formatExcelDate(r[0]); // Format Column A
+            return r;
+          });
+          updatedTag.innerText = `✅ Google Live Synced (${globalDataEntryRaw.length} rows) at ${new Date().toLocaleTimeString()}`;
         } else {
-          throw new Error("CSV Empty");
+          throw new Error("No data returned from Google Sheets");
         }
       } catch (err) {
-        console.warn("Using Fallback Matrix Data due to network restriction", err);
-        globalDataEntryRaw = fallbackMatrix;
-        updatedTag.innerText = `⚡ Data Loaded from Local Cache (${globalDataEntryRaw.length} rows)`;
+        console.error("Direct fetch error:", err);
+        updatedTag.innerText = `⚠️ Google Connection Error. Please retry.`;
       }
 
       populateFilterDropdowns();
@@ -731,10 +718,10 @@ TGI83K1H6MMBEG</textarea>
       vSelect.innerHTML = `<option value="ALL">All Vehicles</option>`;
       tSelect.innerHTML = `<option value="ALL">All Trips</option>`;
 
-      // Col A = Index 0 (Date)
+      // Col A = Index 0 (Formatted Date)
       // Col H = Index 7 (Task / Trip NR)
       // Col I = Index 8 (Vehicle No)
-      const uniqueDates = [...new Set(globalDataEntryRaw.map(r => String(r[0] || "").trim()).filter(Boolean))].sort((a,b) => new Date(a) - new Date(b));
+      const uniqueDates = [...new Set(globalDataEntryRaw.map(r => formatExcelDate(r[0])).filter(Boolean))].sort();
       const uniqueVehicles = [...new Set(globalDataEntryRaw.map(r => String(r[8] || "").trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b, undefined, {numeric: true}));
       const uniqueTrips = [...new Set(globalDataEntryRaw.map(r => String(r[7] || "").trim()).filter(Boolean))].sort();
 
@@ -762,7 +749,7 @@ TGI83K1H6MMBEG</textarea>
       const query = document.getElementById('deSearchInput').value.toLowerCase();
 
       filteredDataEntry = globalDataEntryRaw.filter(row => {
-        const dateVal = String(row[0] || "").trim(); // Col A
+        const dateVal = formatExcelDate(row[0]); // Col A
         const tripVal = String(row[7] || "").trim(); // Col H
         const vehVal  = String(row[8] || "").trim(); // Col I
 
@@ -804,7 +791,7 @@ TGI83K1H6MMBEG</textarea>
       filteredDataEntry.forEach(row => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><strong>${row[0] || "-"}</strong></td>
+          <td><strong>${formatExcelDate(row[0]) || "-"}</strong></td>
           <td><span class="badge-wh" style="background:#e0f2fe; color:#0369a1;">${row[1] || "-"}</span></td>
           <td><strong>${row[2] || "-"}</strong></td>
           <td><strong style="color:var(--text-main);">${row[3] || "-"}</strong></td>
@@ -833,7 +820,11 @@ TGI83K1H6MMBEG</textarea>
     function exportFilteredDataEntryExcel() {
       if (!filteredDataEntry.length) return alert('No filtered data to export!');
       const headers = ["Date", "TRIP ID", "DS CODE", "STORE NAME", "CLUSTER", "STATUS", "SHIFT", "TASK / TRIP NR", "VEHICLE NO", "DA NAME", "DISPATCHER", "DOCK NO", "TEMP (°C)", "Gate Passes", "PHYSICAL TOTES", "Validation", "QTY DISPATCHED", "PALLET BARCODES", "NOT DISPATCH", "KM (WH→Store)", "TRAVEL TIME"];
-      const exportData = [headers, ...filteredDataEntry];
+      const exportData = [headers, ...filteredDataEntry.map(r => {
+        let copy = [...r];
+        copy[0] = formatExcelDate(copy[0]);
+        return copy;
+      })];
       const worksheet = XLSX.utils.aoa_to_sheet(exportData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Filtered_Trips");
@@ -843,7 +834,11 @@ TGI83K1H6MMBEG</textarea>
     function exportFilteredDataEntryCSV() {
       if (!filteredDataEntry.length) return alert('No filtered data to export!');
       const headers = ["Date", "TRIP ID", "DS CODE", "STORE NAME", "CLUSTER", "STATUS", "SHIFT", "TASK / TRIP NR", "VEHICLE NO", "DA NAME", "DISPATCHER", "DOCK NO", "TEMP (°C)", "Gate Passes", "PHYSICAL TOTES", "Validation", "QTY DISPATCHED", "PALLET BARCODES", "NOT DISPATCH", "KM (WH→Store)", "TRAVEL TIME"];
-      const exportData = [headers, ...filteredDataEntry];
+      const exportData = [headers, ...filteredDataEntry.map(r => {
+        let copy = [...r];
+        copy[0] = formatExcelDate(copy[0]);
+        return copy;
+      })];
       const worksheet = XLSX.utils.aoa_to_sheet(exportData);
       const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
       const blob = new Blob(["\ufeff" + csvOutput], { type: 'text/csv;charset=utf-8;' });
