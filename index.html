@@ -692,7 +692,7 @@ TGI83K1H6MMBEG</textarea>
             r[0] = formatExcelDate(r[0]); // Format Column A
             return r;
           });
-          updatedTag.innerText = `✅ Google Live Synced (${globalDataEntryRaw.length} rows) at ${new Date().toLocaleTimeString()}`;
+          updatedTag.innerText = `✅ Live Synced (${globalDataEntryRaw.length} rows) at ${new Date().toLocaleTimeString()}`;
         } else {
           throw new Error("No data returned from Google Sheets");
         }
